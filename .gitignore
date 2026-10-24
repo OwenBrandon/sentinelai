@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Large model weights — hosted separately (see README)
+models/afroxlmr_model/
+models/afroxlmr_ckpt/
+models/bert_model/
+models/bert_checkpoints/
+*.safetensors
+*.bin
+
+# Raw third-party data (licensed separately)
+data/raw/
+
+# Runtime database
+data/*.db

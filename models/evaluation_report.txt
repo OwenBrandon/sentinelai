@@ -1,0 +1,13 @@
+SENTINELAI EVALUATION REPORT
+============================
+Dataset: 1206 rows (964 train / 242 test)
+Base model: Davlan/afro-xlmr-base
+
+TF-IDF + Logistic Regression baseline
+  Accuracy: 98.8%
+
+AfroXLMR (fine-tuned)
+  Accuracy: 97.1%
+  Macro-F1: 97.1%
+
+Sanity test on previously-failing sentences: 15/16

@@ -1,0 +1,14 @@
+# Core (baseline model + API)
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2
+pandas>=2
+numpy>=1.26
+scikit-learn>=1.4
+lime>=0.2
+
+# Transformer model (AfroXLMR) — training and inference
+torch>=2.2
+transformers>=4.40
+datasets>=2.18
+accelerate>=0.30

@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SentinelAI — Threat Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Professional blue corporate-intelligence palette */
+    --bg:          #0a1929;   /* deep navy page background */
+    --bg-2:        #0f2236;   /* panel background */
+    --surface:     #13293f;   /* card / input surface */
+    --surface-2:   #1a3a56;
+    --line:        #1e3a52;   /* hairline borders */
+    --line-soft:   #18324a;
+    --primary:     #2f7fd1;   /* primary blue */
+    --primary-2:   #4a9eea;   /* lighter blue accent */
+    --primary-dim: #1c4a73;
+    --ink:         #eaf2fb;   /* primary text */
+    --ink-2:       #9fb6cc;   /* secondary text */
+    --ink-3:       #5f7a93;   /* tertiary / muted */
+    --danger:      #e5484d;
+    --danger-bg:   #2a1417;
+    --warn:        #e0a52b;
+    --warn-bg:     #2a2110;
+    --safe:        #36b37e;
+    --safe-bg:     #0f2a20;
+    --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --r: 8px;
+    --r-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ─────────────── Top bar ─────────────── */
+  .topbar {
+    height: 58px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .brand-name {
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+  }
+  .brand-name span { color: var(--ink-3); font-weight: 400; }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--ink-3);
+    border-left: 1px solid var(--line);
+    padding-left: 11px;
+    margin-left: 3px;
+    letter-spacing: 0.3px;
+  }
+
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
+
+  .model-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 4px;
+  }
+  .model-switch .mlabel {
+    font-size: 10px;
+    color: var(--ink-3);
+    padding: 0 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .model-btn {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--ink-2);
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .model-btn.active { background: var(--primary); color: #fff; }
+  .model-btn:not(.active):hover { background: var(--surface-2); color: var(--ink); }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .status .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--safe);
+  }
+  .status.offline .dot { background: var(--danger); }
+  .status.offline { color: var(--danger); }
+
+  /* ─────────────── Layout ─────────────── */
+  .wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    margin-bottom: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ─────────────── Metric cards ─────────────── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .metric {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px 20px;
+    position: relative;
+  }
+  .metric .m-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .metric .m-label {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+  }
+  .metric .m-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .m-icon.blue  { background: rgba(47,127,209,.14);  color: var(--primary-2); }
+  .m-icon.red   { background: rgba(229,72,77,.13);   color: var(--danger); }
+  .m-icon.green { background: rgba(54,179,126,.13);  color: var(--safe); }
+  .m-icon.amber { background: rgba(224,165,43,.13);  color: var(--warn); }
+  .metric .m-value {
+    font-family: var(--mono);
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .metric .m-sub { font-size: 12px; color: var(--ink-3); }
+
+  /* ─────────────── Two-column ─────────────── */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 22px;
+    align-items: start;
+    margin-bottom: 22px;
+  }
+
+  .panel {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .panel-body { padding: 20px; }
+
+  /* ─────────────── Analyse form ─────────────── */
+  label.field-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 96px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--primary); }
+  textarea::placeholder { color: var(--ink-3); }
+
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 14px 0;
+  }
+  .src {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 6px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .src.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary-2); }
+  .src:not(.active):hover { border-color: var(--ink-3); color: var(--ink); }
+
+  .actions { display: flex; gap: 10px; margin-top: 4px; }
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    padding: 11px 22px;
+    border-radius: var(--r);
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-2); }
+  .btn-ghost { background: transparent; border: 1px solid var(--primary); color: var(--primary-2); }
+  .btn-ghost:hover { background: var(--primary-dim); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ─────────────── Result ─────────────── */
+  .result {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 18px;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .verdict {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .verdict.sympathizer { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(229,72,77,.3); }
+  .verdict.not_sympathizer { background: var(--safe-bg); color: var(--safe); border: 1px solid rgba(54,179,126,.3); }
+  .pill {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .pill.high   { background: var(--danger-bg); color: var(--danger); }
+  .pill.medium { background: var(--warn-bg);   color: var(--warn); }
+  .pill.low    { background: var(--safe-bg);   color: var(--safe); }
+  .pill.action { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+
+  .conf-wrap { margin-bottom: 14px; }
+  .conf-top {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.4px; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .conf-val { font-family: var(--mono); color: var(--ink-2); }
+  .conf-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .conf-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+
+  .result-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
+  /* ─────────────── Explanation ─────────────── */
+  .explain { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); display: none; }
+  .explain.show { display: block; }
+  .explain-label {
+    font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--primary-2); font-weight: 600; margin-bottom: 12px;
+  }
+  .explain-text { font-size: 15px; line-height: 2.1; margin-bottom: 16px; }
+  .explain-text .w { padding: 2px 6px; border-radius: 4px; }
+  .ebar { display: grid; grid-template-columns: 96px 1fr 52px; gap: 10px; align-items: center; margin-bottom: 6px; font-family: var(--mono); font-size: 11px; }
+  .ebar .ew { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ebar .et { background: var(--line); height: 7px; border-radius: 2px; overflow: hidden; }
+  .ebar .ev { color: var(--ink-3); text-align: right; }
+  .elegend { display: flex; gap: 18px; margin-top: 12px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+  .elegend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+  /* ─────────────── History feed ─────────────── */
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.4px;
+    padding: 6px 13px; border-radius: 6px; border: 1px solid var(--line);
+    background: transparent; color: var(--ink-3); cursor: pointer; transition: all .15s;
+  }
+  .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .feed { max-height: 540px; overflow-y: auto; }
+  .feed::-webkit-scrollbar { width: 5px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .feed-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-soft);
+    display: grid;
+    grid-template-columns: 8px 1fr auto;
+    gap: 13px;
+    align-items: center;
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .feed-dot.sympathizer { background: var(--danger); }
+  .feed-dot.not_sympathizer { background: var(--safe); }
+  .feed-text { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .feed-meta { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 3px; letter-spacing: 0.3px; }
+  .feed-conf { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .empty { padding: 60px 20px; text-align: center; color: var(--ink-3); font-size: 13px; }
+  .empty .ei { font-size: 28px; margin-bottom: 10px; opacity: .4; }
+
+  /* ─────────────── Bottom charts ─────────────── */
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .donut-row { display: flex; align-items: center; gap: 28px; padding: 8px; }
+  svg.donut { transform: rotate(-90deg); flex-shrink: 0; }
+  .legend { display: flex; flex-direction: column; gap: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 2px; }
+  .legend-val { font-family: var(--mono); color: var(--ink-3); margin-left: auto; }
+  .bars { display: flex; align-items: flex-end; gap: 7px; height: 90px; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 6px; transition: height .4s; }
+  .bars-axis { display: flex; justify-content: space-between; margin-top: 10px; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+
+  /* ─────────────── Bulk review ─────────────── */
+  .bulk { margin-top: 22px; }
+  .drop {
+    border: 1.5px dashed var(--line);
+    border-radius: var(--r-lg);
+    padding: 34px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+    background: var(--surface);
+  }
+  .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-dim); }
+  .drop .di { font-size: 30px; color: var(--ink-3); margin-bottom: 10px; }
+  .drop .dt { font-size: 14px; color: var(--ink); margin-bottom: 5px; }
+  .drop .dh { font-size: 12px; color: var(--ink-3); }
+  .bulk-progress { display: none; margin-top: 18px; }
+  .bulk-progress.show { display: block; }
+  .pbar-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); margin-bottom: 7px; }
+  .pbar-track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .pbar-fill { height: 100%; background: var(--primary); width: 0%; transition: width .2s; }
+  .bulk-summary { display: none; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 18px; }
+  .bulk-summary.show { display: grid; }
+  .bsum { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+  .bsum .bv { font-family: var(--mono); font-size: 22px; font-weight: 500; }
+  .bsum .bl { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+  .bulk-actions { display: none; gap: 10px; margin-top: 16px; }
+  .bulk-actions.show { display: flex; }
+  .rtable-wrap { display: none; margin-top: 16px; max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r); }
+  .rtable-wrap.show { display: block; }
+  .rtable-wrap::-webkit-scrollbar { width: 6px; }
+  .rtable-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  table.rtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.rtable th {
+    position: sticky; top: 0; background: var(--surface);
+    text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 500;
+    letter-spacing: .4px; text-transform: uppercase; color: var(--ink-3);
+    border-bottom: 1px solid var(--line);
+  }
+  table.rtable td { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  table.rtable tr:last-child td { border-bottom: none; }
+  .tg { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 5px; white-space: nowrap; }
+  .tg.sympathizer { background: var(--danger-bg); color: var(--danger); }
+  .tg.not_sympathizer { background: var(--safe-bg); color: var(--safe); }
+  .tg-act { font-size: 10px; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .3px; }
+  .tg-act.flag { background: var(--danger-bg); color: var(--danger); }
+  .tg-act.review { background: var(--warn-bg); color: var(--warn); }
+  .tg-act.ignore { background: var(--surface-2); color: var(--ink-3); }
+
+  @media (max-width: 1000px) {
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .cols, .charts { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <div class="brand-name">Sentinel<span>AI</span></div>
+    <div class="brand-sub">Threat Intelligence Platform</div>
+  </div>
+  <div class="topbar-right">
+    <div class="model-switch">
+      <span class="mlabel">Model</span>
+      <button class="model-btn" id="btnBaseline" onclick="switchModel('baseline')">Baseline</button>
+      <button class="model-btn active" id="btnAfro" onclick="switchModel('afroxlmr')">AfroXLMR</button>
+    </div>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">Connecting…</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="m-top"><span class="m-label">Total analysed</span><span class="m-icon blue">∑</span></div>
+      <div class="m-value" id="mTotal">0</div>
+      <div class="m-sub">all-time predictions</div>
+    </div>
+    <div class="metric">
+      <div class="m-top"><span class="m-label">Flagged</span><span class="m-icon red">!</span></div>
+      <div class="m-value" id="mFlagged" style="color:var(--danger)">0</div>
+      <div class="m-sub">high-risk detections</div>
+    </div>
+    <div class="metric">
+      <div class="m-top"><span class="m-label">Cleared</span><span class="m-icon green">✓</span></div>
+      <div class="m-value" id="mCleared" style="color:var(--safe)">0</div>
+      <div class="m-sub">not sympathizer</div>
+    </div>
+    <div class="metric">
+      <div class="m-top"><span class="m-label">Flag rate</span><span class="m-icon amber">%</span></div>
+      <div class="m-value" id="mRate" style="color:var(--warn)">0%</div>
+      <div class="m-sub">of all predictions</div>
+    </div>
+  </div>
+
+  <!-- Main two columns -->
+  <div class="cols">
+
+    <!-- Analyse -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Analyse content</span></div>
+      <div class="panel-body">
+        <label class="field-label" for="inputText">Input text</label>
+        <textarea id="inputText" placeholder="Paste a social media post, comment, or message to assess…"></textarea>
+
+        <label class="field-label" style="margin-top:14px">Source channel</label>
+        <div class="sources" id="sources">
+          <button class="src active" data-s="manual" onclick="setSource(this)">Manual</button>
+          <button class="src" data-s="twitter" onclick="setSource(this)">Twitter / X</button>
+          <button class="src" data-s="facebook" onclick="setSource(this)">Facebook</button>
+          <button class="src" data-s="telegram" onclick="setSource(this)">Telegram</button>
+          <button class="src" data-s="whatsapp" onclick="setSource(this)">WhatsApp</button>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="analyseBtn" onclick="analyse()">Analyse</button>
+          <button class="btn btn-ghost" id="explainBtn" onclick="explain()">Explain</button>
+        </div>
+
+        <!-- Result -->
+        <div class="result" id="result">
+          <div class="result-head">
+            <span class="verdict" id="verdict"></span>
+            <span class="pill action" id="actionPill"></span>
+            <span class="pill" id="riskPill"></span>
+          </div>
+          <div class="conf-wrap">
+            <div class="conf-top"><span>Confidence</span><span class="conf-val" id="confVal">0%</span></div>
+            <div class="conf-track"><div class="conf-fill" id="confFill" style="width:0%"></div></div>
+          </div>
+          <div class="result-meta" id="resultMeta"></div>
+
+          <div class="explain" id="explainBox">
+            <div class="explain-label">Why — word contributions</div>
+            <div class="explain-text" id="explainText"></div>
+            <div id="explainBars"></div>
+            <div class="elegend">
+              <span><i style="background:var(--danger)"></i>pushes toward sympathizer</span>
+              <span><i style="background:var(--safe)"></i>pushes toward not sympathizer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Prediction history</span>
+        <div class="tabs">
+          <button class="tab active" data-t="all" onclick="setTab(this)">All</button>
+          <button class="tab" data-t="flagged" onclick="setTab(this)">Flagged</button>
+        </div>
+      </div>
+      <div class="feed" id="feed">
+        <div class="empty"><div class="ei">⊙</div>No predictions yet<br>Analyse content to populate the log.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts">
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Classification distribution</span></div>
+      <div class="panel-body">
+        <div class="donut-row">
+          <svg class="donut" width="118" height="118" viewBox="0 0 118 118">
+            <circle cx="59" cy="59" r="46" fill="none" stroke="var(--line)" stroke-width="15"/>
+            <circle id="dSafe" cx="59" cy="59" r="46" fill="none" stroke="var(--safe)" stroke-width="15" stroke-dasharray="0 289"/>
+            <circle id="dDanger" cx="59" cy="59" r="46" fill="none" stroke="var(--danger)" stroke-width="15" stroke-dasharray="0 289"/>
+          </svg>
+          <div class="legend">
+            <div class="legend-item"><span class="legend-dot" style="background:var(--danger)"></span>Sympathizer<span class="legend-val" id="lgSymp">0%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:var(--safe)"></span>Not sympathizer<span class="legend-val" id="lgNot">0%</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:var(--warn)"></span>Needs review<span class="legend-val" id="lgRev">0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Recent activity</span></div>
+      <div class="panel-body">
+        <div class="bars" id="bars"><div class="empty" style="padding:0;width:100%;font-size:12px">No data yet</div></div>
+        <div class="bars-axis"><span>Oldest</span><span>Latest</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk review -->
+  <div class="bulk">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Bulk review — upload dataset</span>
+        <span style="font-size:11px;color:var(--ink-3)">CSV · JSON · TXT &nbsp;·&nbsp; up to 2,000 rows</span>
+      </div>
+      <div class="panel-body">
+        <div class="drop" id="drop">
+          <div class="di">⤓</div>
+          <div class="dt">Drop a file here, or click to browse</div>
+          <div class="dh">CSV (text column auto-detected) · JSON (array of strings or objects) · TXT (one item per line)</div>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.json,.txt" style="display:none"/>
+
+        <div class="bulk-progress" id="bulkProgress">
+          <div class="pbar-top"><span id="pbarLabel">Processing…</span><span id="pbarCount">0 / 0</span></div>
+          <div class="pbar-track"><div class="pbar-fill" id="pbarFill"></div></div>
+        </div>
+
+        <div class="bulk-summary" id="bulkSummary">
+          <div class="bsum"><div class="bv" id="bsTotal">0</div><div class="bl">Total reviewed</div></div>
+          <div class="bsum"><div class="bv" id="bsFlag" style="color:var(--danger)">0</div><div class="bl">Flagged</div></div>
+          <div class="bsum"><div class="bv" id="bsReview" style="color:var(--warn)">0</div><div class="bl">Needs review</div></div>
+          <div class="bsum"><div class="bv" id="bsClear" style="color:var(--safe)">0</div><div class="bl">Cleared</div></div>
+        </div>
+
+        <div class="bulk-actions" id="bulkActions">
+          <button class="btn btn-primary" onclick="exportCSV()">Download results (CSV)</button>
+          <button class="btn btn-ghost" onclick="exportReport()">Download summary report</button>
+        </div>
+
+        <div class="rtable-wrap" id="rtableWrap">
+          <table class="rtable">
+            <thead><tr><th style="width:38%">Text</th><th>Author</th><th>Platform</th><th>Verdict</th><th>Action</th><th>Conf.</th></tr></thead>
+            <tbody id="rtableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+const API = 'http://localhost:8000';
+let source = 'manual', tab = 'all';
+
+function setSource(el){ document.querySelectorAll('.src').forEach(s=>s.classList.remove('active')); el.classList.add('active'); source = el.dataset.s; }
+function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); tab = el.dataset.t; loadFeed(); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtTime(iso){ try { return new Date(iso).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); } catch { return ''; } }
+
+async function checkStatus(){
+  try {
+    const r = await fetch(`${API}/`); const d = await r.json();
+    document.getElementById('status').classList.remove('offline');
+    document.getElementById('statusText').textContent = 'System online';
+    const m = d.active_model || 'afroxlmr';
+    document.getElementById('btnAfro').classList.toggle('active', m==='afroxlmr');
+    document.getElementById('btnBaseline').classList.toggle('active', m==='baseline');
+  } catch {
+    document.getElementById('status').classList.add('offline');
+    document.getElementById('statusText').textContent = 'System offline';
+  }
+}
+
+async function switchModel(m){
+  try {
+    const r = await fetch(`${API}/model/switch`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:m})});
+    if(!r.ok){ const e = await r.json(); alert(e.detail||'Switch failed'); return; }
+    checkStatus();
+  } catch { alert('API not reachable.'); }
+}
+
+async function loadStats(){
+  try {
+    const d = await (await fetch(`${API}/stats`)).json();
+    document.getElementById('mTotal').textContent = d.total_predictions;
+    document.getElementById('mFlagged').textContent = d.flag_count ?? d.sympathizer_count;
+    document.getElementById('mCleared').textContent = d.not_sympathizer_count;
+    document.getElementById('mRate').textContent = (d.flag_rate ?? d.sympathizer_rate) + '%';
+    const sr = d.sympathizer_rate, nr = d.not_sympathizer_rate;
+    const circ = 2*Math.PI*46, sd = sr/100*circ, nd = nr/100*circ;
+    document.getElementById('dSafe').setAttribute('stroke-dasharray', `${nd} ${circ-nd}`);
+    document.getElementById('dDanger').setAttribute('stroke-dasharray', `${sd} ${circ-sd}`);
+    document.getElementById('dDanger').setAttribute('stroke-dashoffset', `-${nd}`);
+    document.getElementById('lgSymp').textContent = sr + '%';
+    document.getElementById('lgNot').textContent = nr + '%';
+    document.getElementById('lgRev').textContent = d.review_count ?? 0;
+  } catch {}
+}
+
+async function loadFeed(){
+  try {
+    const ep = tab==='flagged' ? '/history/flagged' : '/history';
+    const d = await (await fetch(`${API}${ep}?limit=40`)).json();
+    const items = d.predictions || [];
+    const feed = document.getElementById('feed');
+    if(!items.length){ feed.innerHTML = `<div class="empty"><div class="ei">⊙</div>No predictions yet<br>Analyse content to populate the log.</div>`; renderBars([]); return; }
+    feed.innerHTML = items.map(it=>`
+      <div class="feed-item">
+        <span class="feed-dot ${it.label}"></span>
+        <div>
+          <div class="feed-text">${esc(it.text.slice(0,80))}${it.text.length>80?'…':''}</div>
+          <div class="feed-meta">${it.author && it.author!=='—' ? '@'+esc(it.author)+' · ' : ''}${esc((it.platform||it.source||'').toUpperCase())} · ${(it.action||'').toUpperCase()} · ${fmtTime(it.timestamp)}</div>
+        </div>
+        <span class="feed-conf">${Number(it.confidence).toFixed(1)}%</span>
+      </div>`).join('');
+    renderBars(items.slice(0,10).reverse());
+  } catch {}
+}
+
+function renderBars(items){
+  const el = document.getElementById('bars');
+  if(!items.length){ el.innerHTML = `<div class="empty" style="padding:0;width:100%;font-size:12px">No data yet</div>`; return; }
+  el.innerHTML = items.map(it=>{
+    const h = Math.max(8, Math.round(Number(it.confidence)*0.85));
+    const c = it.label==='sympathizer' ? 'var(--danger)' : 'var(--safe)';
+    return `<div class="bar" style="height:${h}px;background:${c}" title="${Number(it.confidence).toFixed(1)}% ${it.label}"></div>`;
+  }).join('');
+}
+
+async function analyse(){
+  const text = document.getElementById('inputText').value.trim(); if(!text) return;
+  const b = document.getElementById('analyseBtn'); b.disabled = true; b.textContent = 'Analysing…';
+  try {
+    const d = await (await fetch(`${API}/predict`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,source})})).json();
+    showResult(d); document.getElementById('explainBox').classList.remove('show');
+    loadStats(); loadFeed();
+  } catch { alert('Could not reach the API. Make sure the backend is running.'); }
+  finally { b.disabled = false; b.textContent = 'Analyse'; }
+}
+
+async function explain(){
+  const text = document.getElementById('inputText').value.trim(); if(!text) return;
+  const b = document.getElementById('explainBtn'); b.disabled = true; b.textContent = 'Explaining…';
+  try {
+    const r = await fetch(`${API}/explain`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,source})});
+    if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e.detail||'failed'); }
+    const d = await r.json();
+    showResult(d); renderExplain(text, d.explanation||[]);
+    loadStats(); loadFeed();
+  } catch(e){ alert('Explain failed: '+e.message); }
+  finally { b.disabled = false; b.textContent = 'Explain'; }
+}
+
+function showResult(d){
+  document.getElementById('result').classList.add('show');
+  const v = document.getElementById('verdict');
+  v.className = 'verdict '+d.label;
+  v.textContent = d.label==='sympathizer' ? 'Sympathizer' : 'Not sympathizer';
+  const ap = document.getElementById('actionPill');
+  ap.textContent = 'Action: '+(d.action||'—');
+  const rp = document.getElementById('riskPill');
+  rp.className = 'pill '+(d.risk_level||'low');
+  rp.textContent = 'Risk: '+(d.risk_level||'low');
+  document.getElementById('confVal').textContent = Number(d.confidence).toFixed(1)+'%';
+  const f = document.getElementById('confFill');
+  f.style.width = d.confidence+'%';
+  f.style.background = d.label==='sympathizer' ? 'var(--danger)' : 'var(--safe)';
+  document.getElementById('resultMeta').textContent =
+    `Source ${(d.source||'').toUpperCase()}  ·  ${fmtTime(d.timestamp)}  ·  Model ${(d.model_used||'').toUpperCase()}`;
+}
+
+function renderExplain(text, contribs){
+  const box = document.getElementById('explainBox');
+  const wmap = {}; let mx = 0.0001;
+  contribs.forEach(c=>{ wmap[c.word.toLowerCase()] = c.weight; if(Math.abs(c.weight)>mx) mx = Math.abs(c.weight); });
+  document.getElementById('explainText').innerHTML = text.split(/\s+/).map(w=>{
+    const k = w.toLowerCase().replace(/[^\w']/g,''); const wt = wmap[k];
+    if(wt===undefined) return `<span style="color:var(--ink-3)">${esc(w)}</span>`;
+    const a = (0.12 + Math.min(1,Math.abs(wt)/mx)*0.5).toFixed(2);
+    const c = wt>0 ? `rgba(229,72,77,${a})` : `rgba(54,179,126,${a})`;
+    return `<span class="w" style="background:${c}">${esc(w)}</span>`;
+  }).join(' ');
+  const sorted = [...contribs].sort((a,b)=>Math.abs(b.weight)-Math.abs(a.weight)).slice(0,8);
+  document.getElementById('explainBars').innerHTML = sorted.map(c=>{
+    const pct = Math.min(100, Math.abs(c.weight)/mx*100);
+    const col = c.weight>0 ? 'var(--danger)' : 'var(--safe)';
+    return `<div class="ebar"><span class="ew">${esc(c.word)}</span><div class="et"><div style="height:100%;width:${pct}%;background:${col}"></div></div><span class="ev">${c.weight>0?'+':''}${c.weight.toFixed(2)}</span></div>`;
+  }).join('');
+  box.classList.add('show');
+}
+
+document.getElementById('inputText').addEventListener('keydown', e=>{ if(e.ctrlKey && e.key==='Enter') analyse(); });
+
+// ─────────────── Bulk review ───────────────
+let bulkResults = [];
+const MAX_ROWS = 2000, CHUNK = 100;
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+drop.addEventListener('click', ()=> fileInput.click());
+drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', ()=> drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function pickCol(cols, re){ return cols.find(c=>re.test(c)); }
+
+function handleFile(file){
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let records = [];   // {text, author, platform}
+    try {
+      if(name.endsWith('.csv')){
+        const parsed = Papa.parse(reader.result.trim(), {header:true, skipEmptyLines:true});
+        const cols = parsed.meta.fields || [];
+        const tCol = pickCol(cols, /text|tweet|comment|content|message|post|body/i) || cols[0];
+        const aCol = pickCol(cols, /user|author|handle|name|account|screen/i);
+        const pCol = pickCol(cols, /platform|source|channel|network|site/i);
+        if(!tCol){
+          const p2 = Papa.parse(reader.result.trim(), {skipEmptyLines:true});
+          records = p2.data.map(r=>({text:r[0]})).filter(x=>x.text);
+        } else {
+          records = parsed.data.map(r=>({
+            text: r[tCol],
+            author: aCol ? r[aCol] : null,
+            platform: pCol ? r[pCol] : null,
+          })).filter(x=>x.text);
+        }
+      } else if(name.endsWith('.json')){
+        const data = JSON.parse(reader.result);
+        if(Array.isArray(data)){
+          records = data.map(item=>{
+            if(typeof item === 'string') return {text:item};
+            if(item && typeof item === 'object'){
+              const keys = Object.keys(item);
+              const tk = keys.find(k=>/text|tweet|comment|content|message|post|body/i.test(k)) || keys[0];
+              const ak = keys.find(k=>/user|author|handle|name|account|screen/i.test(k));
+              const pk = keys.find(k=>/platform|source|channel|network|site/i.test(k));
+              return {text:item[tk], author: ak?item[ak]:null, platform: pk?item[pk]:null};
+            }
+            return null;
+          }).filter(x=>x && x.text);
+        }
+      } else {
+        records = reader.result.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(t=>({text:t}));
+      }
+    } catch(err){ alert('Could not parse file: '+err.message); return; }
+
+    records = records.map(r=>({
+      text: String(r.text).trim(),
+      author: r.author ? String(r.author).trim() : null,
+      platform: r.platform ? String(r.platform).trim() : null,
+    })).filter(r=>r.text.length>0);
+
+    if(!records.length){ alert('No text rows found in the file.'); return; }
+    if(records.length > MAX_ROWS){
+      alert(`File has ${records.length} rows. Only the first ${MAX_ROWS} will be processed.`);
+      records = records.slice(0, MAX_ROWS);
+    }
+    runBulk(records);
+  };
+  reader.readAsText(file);
+}
+
+async function runBulk(records){
+  bulkResults = [];
+  document.getElementById('bulkProgress').classList.add('show');
+  document.getElementById('bulkSummary').classList.remove('show');
+  document.getElementById('bulkActions').classList.remove('show');
+  document.getElementById('rtableWrap').classList.remove('show');
+
+  for(let i=0; i<records.length; i+=CHUNK){
+    const chunk = records.slice(i, i+CHUNK);
+    try {
+      const r = await fetch(`${API}/predict/batch`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({texts:chunk, source:'bulk_upload'})
+      });
+      const d = await r.json();
+      (d.results||[]).forEach(res=>{ if(!res.error) bulkResults.push(res); });
+    } catch(e){ alert('Processing failed mid-batch: '+e.message); break; }
+
+    const done = Math.min(i+CHUNK, records.length);
+    document.getElementById('pbarFill').style.width = (done/records.length*100)+'%';
+    document.getElementById('pbarCount').textContent = `${done} / ${records.length}`;
+    document.getElementById('pbarLabel').textContent = done<records.length ? 'Processing…' : 'Complete';
+  }
+  finishBulk();
+  loadStats(); loadFeed();
+}
+
+function finishBulk(){
+  const total = bulkResults.length;
+  const flag = bulkResults.filter(r=>r.action==='flag').length;
+  const review = bulkResults.filter(r=>r.action==='review').length;
+  const clear = total - flag - review;
+  document.getElementById('bsTotal').textContent = total;
+  document.getElementById('bsFlag').textContent = flag;
+  document.getElementById('bsReview').textContent = review;
+  document.getElementById('bsClear').textContent = clear;
+  document.getElementById('bulkSummary').classList.add('show');
+  document.getElementById('bulkActions').classList.add('show');
+
+  const rank = {flag:0, review:1, ignore:2};
+  const sorted = [...bulkResults].sort((a,b)=> (rank[a.action]-rank[b.action]) || (b.confidence-a.confidence));
+  document.getElementById('rtableBody').innerHTML = sorted.slice(0,500).map(r=>`
+    <tr>
+      <td>${esc(r.text.slice(0,120))}${r.text.length>120?'…':''}</td>
+      <td style="color:var(--primary-2)">${esc(r.author||'—')}</td>
+      <td style="color:var(--ink-2)">${esc((r.platform||'—').toString())}</td>
+      <td><span class="tg ${r.label}">${r.label==='sympathizer'?'Sympathizer':'Not sympathizer'}</span></td>
+      <td><span class="tg-act ${r.action}">${r.action}</span></td>
+      <td style="font-family:var(--mono);color:var(--ink-2)">${Number(r.confidence).toFixed(1)}%</td>
+    </tr>`).join('');
+  document.getElementById('rtableWrap').classList.add('show');
+}
+
+function exportCSV(){
+  if(!bulkResults.length) return;
+  const rows = [['text','author','platform','label','action','risk_level','confidence','model']];
+  bulkResults.forEach(r=> rows.push([r.text, r.author||'', r.platform||'', r.label, r.action, r.risk_level, r.confidence, r.model_used]));
+  const csv = rows.map(row=> row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadBlob(csv, 'sentinelai_results.csv', 'text/csv');
+}
+
+function exportReport(){
+  if(!bulkResults.length) return;
+  const total = bulkResults.length;
+  const flag = bulkResults.filter(r=>r.action==='flag').length;
+  const review = bulkResults.filter(r=>r.action==='review').length;
+  const clear = total - flag - review;
+  const symp = bulkResults.filter(r=>r.label==='sympathizer').length;
+  const top = [...bulkResults].filter(r=>r.action==='flag').sort((a,b)=>b.confidence-a.confidence).slice(0,15);
+  let rep = `SENTINELAI — BULK REVIEW SUMMARY REPORT\n`;
+  rep += `Generated: ${new Date().toLocaleString()}\n`;
+  rep += `${'='.repeat(50)}\n\n`;
+  rep += `Total items reviewed : ${total}\n`;
+  rep += `Sympathizer detected : ${symp} (${(symp/total*100).toFixed(1)}%)\n\n`;
+  rep += `OPERATIONAL TRIAGE\n`;
+  rep += `  Flagged (high risk)  : ${flag}\n`;
+  rep += `  Needs human review   : ${review}\n`;
+  rep += `  Cleared              : ${clear}\n\n`;
+  rep += `TOP FLAGGED ITEMS (by confidence)\n${'-'.repeat(50)}\n`;
+  top.forEach((r,i)=>{
+    const who = r.author && r.author!=='—' ? `@${r.author}` : 'unknown author';
+    const where = r.platform && r.platform!=='—' ? r.platform : 'unknown platform';
+    rep += `${i+1}. [${r.confidence.toFixed(1)}%] ${who} on ${where}\n   "${r.text.slice(0,120)}"\n`;
+  });
+  rep += `\n${'='.repeat(50)}\n`;
+  rep += `Note: flagged and review items should be assessed by a human\n`;
+  rep += `analyst before any action. Confidence reflects model certainty,\n`;
+  rep += `not ground truth.\n`;
+  downloadBlob(rep, 'sentinelai_report.txt', 'text/plain');
+}
+
+function downloadBlob(content, filename, type){
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+checkStatus(); loadStats(); loadFeed();
+setInterval(()=>{ checkStatus(); loadStats(); loadFeed(); }, 6000);
+</script>
+</body>
+</html>
